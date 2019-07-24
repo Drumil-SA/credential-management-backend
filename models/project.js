@@ -1,7 +1,7 @@
 var mongoose = require("mongoose");
 
 var projectSchema = new mongoose.Schema({
-    projectFile :File,
+    projectFileURL : String,
     projectTitle : String,
     projectDescription : String,
     createdBy : {
