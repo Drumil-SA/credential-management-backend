@@ -7,6 +7,7 @@ var projectSchema = new mongoose.Schema({
     createdBy : {
         id:{
         type : mongoose.Schema.Types.ObjectId,
+        require: true,
         ref: "User" 
         },
         username : String
