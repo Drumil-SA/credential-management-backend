@@ -5,12 +5,9 @@ var projectSchema = new mongoose.Schema({
     projectTitle : String,
     projectDescription : String,
     createdBy : {
-        id:{
         type : mongoose.Schema.Types.ObjectId,
         require: true,
         ref: "User" 
-        },
-        username : String
     },
     sharedTo : [{
         type : mongoose.Schema.Types.ObjectId,

@@ -35,7 +35,7 @@ var corsOptions = {
 }
 
 app.use(cors(corsOptions))
-
+require('custom-env').env();
 
 
 // Uploading file and store it in aws s3
@@ -201,11 +201,25 @@ app.post("/addProject",upload.single('projectFile'), (req, res, next) => {
 
 
 
-app.post('/getUserProjects',function(req,res,next){
+app.post('/getUserProjects',function(req,res){
+    console.log('inside getUserProject');
     tokenObj = req.body;
     console.log(tokenObj);
-    var decoded  = jwt.decode(tokenObj);
-    console.log("In getUserProfile" + decoded.subject);
+    var decoded  = jwt.decode(tokenObj.token);
+    console.log("In getUserProject" + decoded.subject);
+    console.log(typeof(decoded.subject));
+    console.log(typeof(mongoose.Types.ObjectId(decoded.subject)));
+    var t = decoded.subject;
+    console.log(t);
+    // Project.find({"createdBy.id" : mongoose.Types.ObjectId(t)}).exec(function(err,allUserProejcts){
+    Project.find({createdBy : mongoose.Types.ObjectId(t)}).exec(function(err,allUserProejcts){
+        if(err){
+            console.log("Error at getting all projects "+ err);
+        }else{
+            console.log(allUserProejcts);
+            res.json(allUserProejcts);
+        }
+    })
 });
 
 
