@@ -10,15 +10,25 @@ var multer = require("multer");
 var path = require("path");
 var jwt = require("jsonwebtoken");
 var fname;
-
+multerS3 = require('multer-s3'); 
 var userId;
+var userData = {};
+
+
+// const aws = require("aws-sdk"), // ^2.2.41
+// multer = require("multer"), // "multer": "^1.1.0"
+// multerS3 = require("multer-s3"); //"^1.4.1"
+
+
+
+
 
 mongoose.connect("mongodb://localhost:27017/credential", { useNewUrlParser: true });
 
 app.use(bodyParser.json());
 
 
-app.set('view engine','ejs');
+app.set('view engine', 'ejs');
 var corsOptions = {
     origin: 'http://localhost:4200',
     optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204 
@@ -26,67 +36,59 @@ var corsOptions = {
 
 app.use(cors(corsOptions))
 
-// app.get("/login",function(req,res){
 
-// })
+
+// Uploading file and store it in aws s3
+
 aws.config.update({
-    "secretAccessKey": 'mhCWgyVshcH7Zd/eBOcNZatVuYqURTJjSYmmZrpa',
-    "accessKeyId": 'AKIAIRO2GSIAHDSSMTAQ',
+    "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
+    "accessKeyId": process.env.AWS_ACCESS_KEY,
     "region": 'ap-south-1'
 });
 // var s3 = require('s3-upload-stream')(new AWS.S3());
 const s3 = new aws.S3();
 
-// const upload = multer({
-//     storage: multerS3({
-//         s3:s3,
-//         bucket: 'testbucketdrumil',
-//         key: function(req,file,cb){
-//             console.log(file);
-//             cb(null,file.originalname);
-//         }
-//     }),
-//     limits: { fileSize: 100000000 },
-//     fileFilter: function (req, file, cb) {
-//         checkFileType(file, cb);
+var upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: "testbucketdrumil",
+        key: function (req, file, cb) {
+            console.log(file);
+            cb(null, file.originalname);
+            console.log(file);
+        }
+    })
+});
+
+//set storage engine
+
+// const storage = multer.diskStorage({
+//     destination: './public/uploads/',
+//     filename: function (req, file, cb) {
+//         console.log(file.fieldname);
+//         fname = file.fieldname + "-" + Date.now() + path.extname(file.originalname);
+//         cb(null, fname);
+//         //   cb(null, file.fieldname + '-' + Date.now())
 //     }
 // });
 
-//set storage engine
-const storage = multer.diskStorage({
-    destination: './public/uploads/',
-    filename: function (req, file, cb) {
-        console.log(file.fieldname);
-        fname = file.fieldname + "-" + Date.now() + path.extname(file.originalname);
-        cb(null, fname);
-        //   cb(null, file.fieldname + '-' + Date.now())
-    }
-});
-
-//Init upload
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 100000000 },
-    fileFilter: function (req, file, cb) {
-        checkFileType(file, cb);
-    }
-}).single("myFile");
 
 
-function checkFileType(file, cb) {
-    // Allowed ext
-    const filetypes = /png/;
-    // Check ext
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    // Check mime
-    const mimetype = filetypes.test(file.mimetype);
-  
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb("Error: Upload Videos Only!");
-    }
-}
+
+// function checkFileType(file, cb) {
+//     // Allowed ext
+//     const filetypes = /png/;
+//     // Check ext
+//     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+//     // Check mime
+//     const mimetype = filetypes.test(file.mimetype);
+
+//     if (mimetype && extname) {
+//       return cb(null, true);
+//     } else {
+//       cb("Error: Upload Videos Only!");
+//     }
+// }
 
 app.post("/login", (req, res, next) => {
     var email1 = req.body.email;
@@ -105,12 +107,12 @@ app.post("/login", (req, res, next) => {
             // console.log(data);
             // app.get("/login",function(req,res){
             // console.log("After login");
-            let payload = { subject: data._id}
+            let payload = { subject: data._id }
             console.log(payload);
             let token = jwt.sign(payload, 'secretKey');
             userId = data._id;
             // var verify = jwt.verify(token,'secretKey');
-            res.json({token});
+            res.json({ token });
             // });
         }
     });
@@ -131,83 +133,85 @@ app.post("/signup/", (req, res, next) => {
                 if (err) {
                     console.log("Error while signing up");
                 } else {
-                    let payload = { subject: data._id}
+                    let payload = { subject: data._id }
                     let token = jwt.sign(payload, 'secretKey');
                     userId = data._id;
                     console.log(data);
-                    return res.json({token});
+                    console.log("In signup ======================");
+                    // console.log({token});
+                    return res.json({ token });
                 }
             });
         }
     });
 });
 
-app.post("/userProfile",function(req,res,next){
-    console.log(req);
+app.post("/userProfile", function (req, res, next) {
+    console.log(" ======================================= user profile");
+    console.log(req.body);
     var decoded = jwt.decode(req.body.token);
-    console.log("decoded "+ decoded);
+    console.log("decoded " + decoded);
     var user_id = decoded.subject;
-    console.log("    "+userId);
-    console.log("    "+user_id);
+    console.log("    " + userId);
+    console.log("    " + user_id);
     // console.log(user_id == userId);
     // console.log(typeof(user_id));
     // console.log(typeof(userId));
-    if(user_id == userId){
-        User.findById(userId).exec(function(err,data){
-            if(err){
+    if (user_id == userId) {
+        User.findById(userId).exec(function (err, data) {
+            if (err) {
                 console.log("errrooooooo");
                 res.json(err);
-            }else if(!data){
+            } else if (!data) {
                 console.log("no data");
-            }else{
-                console.log(data);
+            } else {
+                userData = data;
+                console.log('*****************************' + data);
                 res.json(data);
             }
         });
     }
 });
 
-var fileName = '';
-app.post("/addProject", (req, res, next) => {
-    // upload(req, res, (err) => {
-    //     console.log(req);
-    //     if (err) {
-    //         console.log("hii");
-    //         // res.render('upload', { msg: err });
-    //     } else {
-    //         if (req.file == undefined) {
-    //             console.log("fds");
-    //             // res.render('upload', { msg: 'Error: No File Selected!' });
-    //         } else {
-    //             console.log("file");
-    //           var name = fname;
-    //           var path = req.file.originalname;
-  
-    //     // console.log(req);
-    //     var newFile = {
-    //       name: name,
-    //       path: path
-    //     };
-    //     console.log(newFile);
-    // }
+
+app.post('/getUserdata', function (req, res) {
+    res.json({ user: userData });
+});
+
+app.post("/addProject",upload.single('projectFile'), (req, res, next) => {
     console.log(req.body);
-    // Project.create()
-// }
-    // });
-    fileName  = req.body.projectTitle;
-    params = { Bucket: 'testbucketdrumil', Key: req.body.projectTitle , Body : req.body.projectFile,  ACL: 'public-read'};
-    s3.putObject(params,function(err,data){
-        if(err){
+
+    fileName = req.body.projectTitle; 
+    params = { Bucket: 'testbucketdrumil', Key: req.body.projectTitle, Body: req.body.projectFile, ACL: 'public-read' };
+    s3.putObject(params, function (err, data) {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             console.log("upload successfully");
+            Project.create(req.body, function (err, data) {
+                if (err) {
+                    console.log(err);
+                } if (data) {
+                    console.log("insert successfully");
+                }
+            })
         }
     });
 });
 
-app.post('/getS3URL',function(req,res){
-    console.log("req.body "+req.body);
-    res.json({URL : 'https://testbucketdrumil.s3.amazonaws.com'+req.body.fileTitle});
+
+
+app.post('/getUserProjects',function(req,res,next){
+    tokenObj = req.body;
+    console.log(tokenObj);
+    var decoded  = jwt.decode(tokenObj);
+    console.log("In getUserProfile" + decoded.subject);
+});
+
+
+app.post('/getS3URL', function (req, res) {
+    console.log("req.body " + req.body);
+    res.json({ URL: 'https://testbucketdrumil.s3.amazonaws.com/' });
 });
 
 
