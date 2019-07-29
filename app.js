@@ -5,12 +5,12 @@ var mongoose = require("mongoose");
 var User = require('./models/user');
 var Project = require('./models/project');
 var cors = require('cors');
-var aws = require('aws-sdk');
+// var aws = require('aws-sdk');
 var multer = require("multer");
 var path = require("path");
 var jwt = require("jsonwebtoken");
 var fname;
-multerS3 = require('multer-s3'); 
+// multerS3 = require('multer-s3'); 
 var userId;
 var userData = {};
 
@@ -40,25 +40,25 @@ require('custom-env').env();
 
 // Uploading file and store it in aws s3
 
-aws.config.update({
-    "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
-    "accessKeyId": process.env.AWS_ACCESS_KEY,
-    "region": 'ap-south-1'
-});
+// aws.config.update({
+//     "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
+//     "accessKeyId": process.env.AWS_ACCESS_KEY,
+//     "region": 'ap-south-1'
+// });
 // var s3 = require('s3-upload-stream')(new AWS.S3());
-const s3 = new aws.S3();
+// const s3 = new aws.S3();
 
-var upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: "testbucketdrumil",
-        key: function (req, file, cb) {
-            console.log(file);
-            cb(null, file.originalname);
-            console.log(file);
-        }
-    })
-});
+// var upload = multer({
+//     storage: multerS3({
+//         s3: s3,
+//         bucket: "testbucketdrumil",
+//         key: function (req, file, cb) {
+//             console.log(file);
+//             cb(null, file.originalname);
+//             console.log(file);
+//         }
+//     })
+// });
 
 //set storage engine
 
@@ -173,55 +173,82 @@ app.post("/userProfile", function (req, res, next) {
     }
 });
 
+app.post('/isLoggedIn',function(req,res){
+    console.log("inside IsLogedIn ****************");
+    tokenObj = req.body;
+    t = jwt.decode(tokenObj.token);
+    console.log(t);
+    User.findById(mongoose.Types.ObjectId(t.subject)).exec(function(err,data){
+        if(err){
+            return false;
+        } else if (!data){ 
+            return false;
+        } else {
+            return true;
+        }
+    });
+});
 
 app.post('/getUserdata', function (req, res) {
     res.json({ user: userData });
 });
 
-app.post("/addProject",upload.single('projectFile'), (req, res, next) => {
+app.post("/addProject", (req, res, next) => {
     console.log(req.body);
 
-    fileName = req.body.projectTitle; 
-    params = { Bucket: 'testbucketdrumil', Key: req.body.projectTitle, Body: req.body.projectFile, ACL: 'public-read' };
-    s3.putObject(params, function (err, data) {
+    // fileName = req.body.projectTitle; 
+    // params = { Bucket: 'testbucketdrumil', Key: req.body.projectTitle, Body: req.body.projectFile, ACL: 'public-read' };
+    // s3.putObject(params, function (err, data) {
+    //     if (err) {
+    //         console.log(err);
+    //     } else {
+    // console.log("upload successfully");
+    Project.create(req.body, function (err, data) {
         if (err) {
             console.log(err);
-        } else {
-            console.log("upload successfully");
-            Project.create(req.body, function (err, data) {
-                if (err) {
-                    console.log(err);
-                } if (data) {
-                    console.log("insert successfully");
-                }
-            })
-        }
-    });
-});
-
-
-
-app.post('/getUserProjects',function(req,res){
-    console.log('inside getUserProject');
-    tokenObj = req.body;
-    console.log(tokenObj);
-    var decoded  = jwt.decode(tokenObj.token);
-    console.log("In getUserProject" + decoded.subject);
-    console.log(typeof(decoded.subject));
-    console.log(typeof(mongoose.Types.ObjectId(decoded.subject)));
-    var t = decoded.subject;
-    console.log(t);
-    // Project.find({"createdBy.id" : mongoose.Types.ObjectId(t)}).exec(function(err,allUserProejcts){
-    Project.find({createdBy : mongoose.Types.ObjectId(t)}).exec(function(err,allUserProejcts){
-        if(err){
-            console.log("Error at getting all projects "+ err);
-        }else{
-            console.log(allUserProejcts);
-            res.json(allUserProejcts);
+        } if (data) {
+            console.log("insert successfully");
         }
     })
 });
 
+
+
+app.post('/getUserProjects', (req, res, next) => {
+    console.log('inside getUserProject**************************');
+    console.log(req);
+    tokenObj = req.body;
+    console.log(tokenObj);
+    var decoded = jwt.decode(tokenObj.token);
+    console.log("In getUserProject" + decoded.subject);
+    console.log(typeof (decoded.subject));
+    console.log(typeof (mongoose.Types.ObjectId(decoded.subject)));
+    var t = mongoose.Types.ObjectId(decoded.subject);
+    console.log(t);
+    // Project.find({"createdBy.id" : mongoose.Types.ObjectId(t)}).exec(function(err,allUserProejcts){
+    Project.find({ 'createdBy': t }).exec(function (err, allUserProejcts) {
+        if (err) {
+            console.log("Error at getting all projects " + err);
+        } else {
+            console.log(allUserProejcts);
+            res.json(allUserProejcts);
+        }
+    });
+});
+
+app.post('/getProjectDetail', (req,res, next) => {
+    console.log(req);
+    console.log("Backend project detail");
+    // console.log(req.body);
+    id = req.body.id;
+    Project.findById(mongoose.Types.ObjectId(id)).exec(function(err,data){
+        if(err){
+            console.log(err);
+        }else{
+            res.json({projectData : data});
+        }
+    });
+});
 
 app.post('/getS3URL', function (req, res) {
     console.log("req.body " + req.body);
