@@ -14,16 +14,14 @@ var fname;
 var userId;
 var userData = {};
 
-
 // const aws = require("aws-sdk"), // ^2.2.41
 // multer = require("multer"), // "multer": "^1.1.0"
 // multerS3 = require("multer-s3"); //"^1.4.1"
 
+require('custom-env').env();
 
 
-
-
-mongoose.connect("mongodb://localhost:27017/credential", { useNewUrlParser: true });
+mongoose.connect(process.env.DATABASE +"://" + process.env.DATABASE_IP + ":"+ process.env.DATABASE_PORT + "/" + process.env.DATABASE_NAME , { useNewUrlParser: true });
 
 app.use(bodyParser.json());
 
@@ -34,8 +32,7 @@ var corsOptions = {
     optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204 
 }
 
-app.use(cors(corsOptions))
-require('custom-env').env();
+app.use(cors(corsOptions));
 
 
 // Uploading file and store it in aws s3
