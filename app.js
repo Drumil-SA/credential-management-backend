@@ -215,9 +215,11 @@ app.post("/addProject", (req, res, next) => {
 
 
 app.post('/getUserProjects', (req, res, next) => {
-    console.log('inside getUserProject**************************');
+    console.log('inside getUserProjects**************************');
     console.log(req);
-    tokenObj = req.body;
+    tokenObj = req.body.tokenObj;
+    console.log(tokenObj);
+    var tokenObj = JSON.parse(tokenObj);
     console.log(tokenObj);
     var decoded = jwt.decode(tokenObj.token);
     console.log("In getUserProject" + decoded.subject);
@@ -245,7 +247,23 @@ app.post('/getProjectDetail', (req,res, next) => {
         if(err){
             console.log(err);
         }else{
+            console.log("project data----------------------");
+            console.log(data);
             res.json({projectData : data});
+        }
+    });
+});
+
+app.post('/deleteProject', (req,res,next) => {
+    console.log("Inside delete project******************************************");
+    console.log(req.body);
+    var id = req.body.id;
+    Project.findByIdAndDelete(mongoose.Types.ObjectId(id)).exec(function(err, data){
+        if(err){
+            console.log(err);
+        } else {
+            console.log(res);
+            res.json(data);
         }
     });
 });
